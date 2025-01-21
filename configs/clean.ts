@@ -1,20 +1,34 @@
 import { rmSync } from 'fs';
 
-const clean = ['node_modules', 'app/dist', 'release/build', 'package-lock.json'];
+// Constantes para directorios
+const DIRECTORIES = {
+  node: 'node_modules',
+  dist: 'app/dist',
+  build: 'release/build',
+  package: 'package-lock.json',
+};
 
-switch (process.argv[2]) {
+// Función para eliminar un directorio
+function removeDirectory(path: string): void {
+  rmSync(path, { recursive: true, force: true });
+}
+
+// Función para limpiar todos los directorios
+function cleanAll(): void {
+  Object.values(DIRECTORIES).forEach(removeDirectory);
+}
+
+// Manejo de comandos
+const command = process.argv[2];
+switch (command) {
   case '--clean':
-    clean.forEach((dir) => {
-      rmSync(dir, { recursive: true, force: true });
-    });
+    cleanAll();
     break;
   case '--dist':
-    rmSync('app/dist', { recursive: true, force: true });
+    removeDirectory(DIRECTORIES.dist);
     break;
   case '--build':
-    rmSync('release/build', { recursive: true, force: true });
+    removeDirectory(DIRECTORIES.build);
     break;
   default:
-    // eslint-disable-next-line no-console
-    console.log('Empty action received');
 }

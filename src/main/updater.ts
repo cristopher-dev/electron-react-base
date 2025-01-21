@@ -1,38 +1,53 @@
-import { autoUpdater } from 'electron-updater';
+import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
 import log from 'electron-log';
 
-/**
- * ELECTRON AUTO UPDATER LISTENERS
- */
+// Configuración del logger
+const LOG_CONFIG = {
+  fileLevel: 'info' as const,
+  startMessage: 'App is starting...',
+};
 
-autoUpdater.logger = log;
-log.transports.file.level = 'info';
-log.info('App is starting...');
+class UpdaterManager {
+  constructor() {
+    this.initLogger();
+    this.setupEventListeners();
+  }
 
-autoUpdater.on('checking-for-update', () => {
-  log.info('Checking for update...');
-});
+  private initLogger(): void {
+    autoUpdater.logger = log;
+    log.transports.file.level = LOG_CONFIG.fileLevel;
+    log.info(LOG_CONFIG.startMessage);
+  }
 
-autoUpdater.on('update-available', (info) => {
-  log.info('Update available.', info);
-});
+  private setupEventListeners(): void {
+    autoUpdater.on('checking-for-update', () => {
+      log.info('Checking for update...');
+    });
 
-autoUpdater.on('update-not-available', (info) => {
-  log.info('Update not available.', info);
-});
+    autoUpdater.on('update-available', (info: UpdateInfo) => {
+      log.info('Update available.', info);
+    });
 
-autoUpdater.on('error', (err) => {
-  log.info(`Error in auto-updater. ${err}`);
-});
+    autoUpdater.on('update-not-available', (info: UpdateInfo) => {
+      log.info('Update not available.', info);
+    });
 
-autoUpdater.on('download-progress', (speed) => {
-  let logMessage = `Downloading speed: ${speed.bytesPerSecond}`;
-  logMessage = `${logMessage} - Downloaded ${speed.percent}%`;
-  logMessage = `${logMessage} (${speed.transferred}/${speed.total})`;
-  log.info(logMessage);
-});
+    autoUpdater.on('error', (err: Error) => {
+      log.error(`Error in auto-updater: ${err.message}`);
+    });
 
-autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded', info);
-  autoUpdater.quitAndInstall();
-});
+    autoUpdater.on('download-progress', (progressInfo: ProgressInfo) => {
+      const { bytesPerSecond, percent, transferred, total } = progressInfo;
+      log.info(
+        `Downloading speed: ${bytesPerSecond} - Downloaded ${percent}% (${transferred}/${total})`,
+      );
+    });
+
+    autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+      log.info('Update downloaded', info);
+      autoUpdater.quitAndInstall();
+    });
+  }
+}
+
+export default new UpdaterManager();

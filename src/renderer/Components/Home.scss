@@ -1,9 +1,17 @@
+// Variables
+$button-shadow:
+  0px 8px 28px -6px rgba(24, 39, 75, 0.12),
+  0px 18px 88px -4px rgba(24, 39, 75, 0.14);
+$transition-default: all ease-in 0.1s;
+$border-radius: 10px;
+$font-size-large: 1.3rem;
+
+// Header Styles
 .App-Header {
-  align-items: center;
   display: flex;
-  flex-direction: row;
-  font-size: calc(10px + 2vmin);
+  align-items: center;
   justify-content: center;
+  font-size: calc(10px + 2vmin);
 
   .App-Plus {
     position: absolute;
@@ -11,37 +19,38 @@
   }
 }
 
+// Logo Styles
 .App-Logo {
   height: 7em;
   padding: 1.5em;
   will-change: filter;
+
+  &:hover {
+    filter: drop-shadow(0 0 2em #252a86aa);
+  }
+
+  &.React:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
+  }
 }
 
-.App-Logo:hover {
-  filter: drop-shadow(0 0 2em #252a86aa);
-}
-
-.App-Logo.React:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-/* LOGO ROUTE */
+// Logo Animation
 @media (prefers-reduced-motion: no-preference) {
   .App-Logo {
     animation: App-logo-spin infinite 20s linear;
   }
+}
 
-  @keyframes App-logo-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
-/* LOGO ROUTE */
 
+// Content Styles
 .Content {
   text-align: center;
 }
@@ -50,52 +59,43 @@
   padding: 1rem;
 }
 
-.White-Button {
+// Button Styles
+%button-base {
   appearance: none;
-  background-color: white;
-  border-radius: 10px;
   border: none;
-  box-shadow: 0px 8px 28px -6px rgba(24, 39, 75, 0.12), 0px 18px 88px -4px rgba(24, 39, 75, 0.14);
+  border-radius: $border-radius;
+  box-shadow: $button-shadow;
   color: black;
   cursor: pointer;
-  font-size: 1.3rem;
+  font-size: $font-size-large;
   font-weight: 500;
-  margin-right: 2rem;
   opacity: 0.9;
   padding: 10px 20px;
-  transition: all ease-in 0.1s;
+  transition: $transition-default;
+
+  &:hover {
+    transform: scale(1.05);
+    opacity: 1;
+  }
 }
 
-.White-Button:hover {
-  transform: scale(1.05);
-  opacity: 1;
+.White-Button {
+  @extend %button-base;
+  background-color: white;
+  margin-right: 2rem;
+}
+
+.Bmc-Button {
+  @extend %button-base;
+  background-color: #ffdd00;
+  font-family: sans-serif;
 }
 
 .Bmc-Logo {
   height: 1.1em;
 }
 
-.Bmc-Button {
-  appearance: none;
-  background-color: #ffdd00;
-  border-radius: 10px;
-  border: none;
-  box-shadow: 0px 8px 28px -6px rgba(24, 39, 75, 0.12), 0px 18px 88px -4px rgba(24, 39, 75, 0.14);
-  color: black;
-  cursor: pointer;
-  font-family: sans-serif;
-  font-size: 1.3rem;
-  font-weight: 500;
-  opacity: 0.9;
-  padding: 10px 20px;
-  transition: all ease-in 0.1s;
-}
-
-.Bmc-Button:hover {
-  transform: scale(1.05);
-  opacity: 1;
-}
-
+// Footer Styles
 .footer {
   display: flex;
   justify-content: center;

@@ -1,77 +1,100 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import Store from 'electron-store';
 import { isDebug, getAssetsPath, getHtmlPath, getPreloadPath, installExtensions } from './utils';
-import menu from './menu';
+import { createMenu } from './menu';
 import './updater';
 
-function createWindow() {
-  const mainWindow = new BrowserWindow({
-    icon: getAssetsPath('icon.ico'),
-    width: 1100,
-    height: 750,
-    webPreferences: {
-      devTools: isDebug,
-      preload: getPreloadPath('preload.js'),
-      // nodeIntegration: true, // NODE.JS WILL AVAILABLE IN RENDERER
-    },
-  });
+// Modificación del manejo de electron-store
+let store: any;
 
-  mainWindow.loadURL(getHtmlPath('index.html'));
+const initStore = async () => {
+  try {
+    const Store = await import('electron-store');
+    store = new Store.default();
+  } catch (error) {
+    console.error('Error al inicializar electron-store:', error);
+  }
+};
 
-  /* MENU BUILDER */
-  Menu.setApplicationMenu(menu);
+// Configuración básica de la ventana
+const windowConfig = {
+  icon: getAssetsPath('icon.ico'),
+  width: 1100,
+  height: 750,
+  webPreferences: {
+    devTools: isDebug,
+    preload: getPreloadPath('preload.js'),
+    contextIsolation: true,
+    nodeIntegration: false,
+  },
+};
 
-  /* AUTO UPDATER INVOKE */
-  autoUpdater.checkForUpdatesAndNotify();
+class AppWindow {
+  private static window: BrowserWindow | null = null;
 
-  /* DEBUG DEVTOOLS */
-  if (isDebug) {
-    mainWindow.webContents.openDevTools(); // ELECTRON DEVTOOLS
-    installExtensions(); // REACT DEVTOOLS INSTALLER
+  static async create(): Promise<BrowserWindow> {
+    if (!this.window) {
+      this.window = new BrowserWindow(windowConfig);
+      await this.window.loadURL(getHtmlPath('index.html'));
+      this.setupHandlers(this.window);
+      if (isDebug) await this.setupDevelopment(this.window);
+    }
+    return this.window;
   }
 
-  /* URLs OPEN IN DEFAULT BROWSER */
-  mainWindow.webContents.setWindowOpenHandler((data) => {
-    shell.openExternal(data.url);
-    return { action: 'deny' };
-  });
+  private static setupHandlers(win: BrowserWindow): void {
+    win.webContents.setWindowOpenHandler(({ url }) => {
+      shell.openExternal(url);
+      return { action: 'deny' };
+    });
+
+    win.on('closed', () => {
+      this.window = null;
+    });
+  }
+
+  private static async setupDevelopment(win: BrowserWindow): Promise<void> {
+    win.webContents.openDevTools();
+    await installExtensions();
+  }
 }
 
-/* IPC EVENTS EXAMPLE */
-ipcMain.on('message', (event, arg) => {
-  // eslint-disable-next-line no-console
-  console.log(`IPC Example: ${arg}`);
-  event.reply('reply', 'Ipc Example:  pong 🏓');
-});
+// Manejadores IPC simplificados
+const setupIpc = (): void => {
+  if (!store) {
+    console.error('Store no está inicializado - IPC no estará disponible');
+    return;
+  }
 
-/** ELECTRON STORE EXAMPLE
- *  NOTE: LOCAL STORAGE FOR YOUR APPLICATION
- */
-const store = new Store();
-ipcMain.on('set', (_event, key, val) => {
-  // eslint-disable-next-line no-console
-  console.log(`Electron Store Example: key: ${key}, value: ${val}`);
-  store.set(key, val);
-});
-ipcMain.on('get', (event, val) => {
-  // eslint-disable-next-line no-param-reassign
-  event.returnValue = store.get(val);
-});
-
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+  ipcMain.on('message', (event) => {
+    try {
+      event.reply('reply', 'Ipc Example: pong 🏓');
+    } catch (error) {
+      console.error('Error en el manejo de IPC:', error);
     }
   });
-});
+
+  ipcMain.on('set', (_event, key, value) => store.set(key, value));
+  ipcMain.handle('get', (_event, key) => store.get(key));
+};
+
+const startApp = async (): Promise<void> => {
+  await app.whenReady();
+  await initStore(); // Inicializar store
+  Menu.setApplicationMenu(createMenu());
+  autoUpdater.checkForUpdatesAndNotify();
+  setupIpc();
+  await AppWindow.create();
+
+  app.on('activate', async () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      await AppWindow.create();
+    }
+  });
+};
+
+startApp().catch(console.error);
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  if (process.platform !== 'darwin') app.quit();
 });

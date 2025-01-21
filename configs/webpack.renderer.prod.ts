@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import path from 'path';
 import webpack from 'webpack';
 import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
@@ -6,25 +5,36 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
+import sass from 'sass';
+
+// Rutas base
+const PATHS = {
+  root: path.join(__dirname, '..'),
+  src: path.join(__dirname, '../src'),
+  dist: path.join(__dirname, '../app/dist/renderer'),
+  tsconfig: path.resolve(__dirname, '../tsconfig.json'),
+};
 
 const Configuration: webpack.Configuration = {
-  mode: 'development',
-  devtool: 'inline-source-map',
+  mode: 'production',
+  devtool: 'source-map',
   target: ['web', 'electron-renderer'],
   stats: 'errors-only',
-  entry: path.join(__dirname, '../src/renderer/index.tsx'),
+  entry: path.join(PATHS.src, 'renderer/index.tsx'),
+
+  // Reglas de módulos
   module: {
     rules: [
+      // TypeScript
       {
         test: /\.[jt]sx?$/,
         exclude: /node_modules/,
         use: {
           loader: 'ts-loader',
-          options: {
-            transpileOnly: true,
-          },
+          options: { transpileOnly: true },
         },
       },
+      // Estilos
       {
         test: /\.(scss|css)$/,
         use: [
@@ -33,14 +43,13 @@ const Configuration: webpack.Configuration = {
           {
             loader: 'sass-loader',
             options: {
-              implementation: require('sass'),
-              sassOptions: {
-                fiber: false,
-              },
+              implementation: sass,
+              sassOptions: { fiber: false },
             },
           },
         ],
       },
+      // Archivos estáticos
       {
         test: /\.(png|jpg|jpeg|gif|ico|svg)$/,
         use: {
@@ -53,10 +62,12 @@ const Configuration: webpack.Configuration = {
       },
     ],
   },
+
+  // Plugins
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: path.join(__dirname, '../src/renderer/index.html'),
+      template: path.join(PATHS.src, 'renderer/index.html'),
       minify: {
         collapseWhitespace: true,
         removeAttributeQuotes: true,
@@ -64,28 +75,41 @@ const Configuration: webpack.Configuration = {
       },
       isBrowser: false,
     }),
-    new MiniCssExtractPlugin({
-      filename: 'style.css',
-    }),
+    new MiniCssExtractPlugin({ filename: 'style.css' }),
     new webpack.EnvironmentPlugin({
       ELECTRON_ENV: JSON.stringify(process.env.ELECTRON_ENV || 'production'),
     }),
   ],
+
+  // Resolución de módulos
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
-    modules: [path.join(__dirname, '../src'), 'node_modules'],
-    plugins: [
-      new TsconfigPathsPlugin({
-        configFile: path.resolve(__dirname, '../tsconfig.json'),
-      }),
-    ],
+    modules: [path.join(PATHS.src), 'node_modules'],
+    plugins: [new TsconfigPathsPlugin({ configFile: PATHS.tsconfig })],
   },
+
+  // Optimización
   optimization: {
     minimize: true,
-    minimizer: [new TerserPlugin(), new CssMinimizerPlugin()],
+    minimizer: [
+      new TerserPlugin({
+        parallel: true,
+      }),
+      new CssMinimizerPlugin(),
+    ],
+    splitChunks: {
+      chunks: 'all',
+    },
   },
+
+  // Cache
+  cache: {
+    type: 'filesystem',
+  },
+
+  // Salida
   output: {
-    path: path.join(__dirname, '../app/dist/renderer'),
+    path: PATHS.dist,
     filename: '[name].js',
     publicPath: './',
   },

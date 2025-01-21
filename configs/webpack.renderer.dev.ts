@@ -1,6 +1,5 @@
-/* eslint-disable import/no-extraneous-dependencies */
+import sass from 'sass';
 import path from 'path';
-import chalk from 'chalk';
 import webpack from 'webpack';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
@@ -8,25 +7,35 @@ import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import { spawn } from 'child_process';
 import { port } from '../DevConfig.json';
 import 'webpack-dev-server';
+// Rutas base
+const PATHS = {
+  root: path.join(__dirname, '..'),
+  src: path.join(__dirname, '../src'),
+  dist: path.join(__dirname, '../app/dist/renderer'),
+  tsconfig: path.resolve(__dirname, '../tsconfig.json'),
+};
 
+// Configuración de webpack
 const Configuration: webpack.Configuration = {
   mode: 'development',
   devtool: 'inline-source-map',
   target: ['web', 'electron-renderer'],
   stats: 'errors-only',
-  entry: path.join(__dirname, '../src/renderer/index.tsx'),
+  entry: path.join(PATHS.src, 'renderer/index.tsx'),
+
+  // Reglas de módulos
   module: {
     rules: [
+      // TypeScript
       {
         test: /\.[jt]sx?$/,
         exclude: /node_modules/,
         use: {
           loader: 'ts-loader',
-          options: {
-            transpileOnly: true,
-          },
+          options: { transpileOnly: true },
         },
       },
+      // Estilos
       {
         test: /\.(scss|css)$/,
         use: [
@@ -35,14 +44,13 @@ const Configuration: webpack.Configuration = {
           {
             loader: 'sass-loader',
             options: {
-              implementation: require('sass'),
-              sassOptions: {
-                fiber: false,
-              },
+              implementation: sass,
+              sassOptions: { fiber: false },
             },
           },
         ],
       },
+      // Archivos estáticos
       {
         test: /\.(png|jpg|jpeg|gif|ico|svg)$/,
         use: {
@@ -55,10 +63,12 @@ const Configuration: webpack.Configuration = {
       },
     ],
   },
+
+  // Plugins
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: path.join(__dirname, '../src/renderer/index.html'),
+      template: path.join(PATHS.src, 'renderer/index.html'),
       minify: {
         collapseWhitespace: true,
         removeAttributeQuotes: true,
@@ -71,49 +81,40 @@ const Configuration: webpack.Configuration = {
       ELECTRON_ENV: JSON.stringify(process.env.ELECTRON_ENV || 'production'),
     }),
   ],
+
+  // Resolución
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
-    modules: [path.join(__dirname, '../src'), 'node_modules'],
-    plugins: [
-      new TsconfigPathsPlugin({
-        configFile: path.resolve(__dirname, '../tsconfig.json'),
-      }),
-    ],
+    modules: [path.join(PATHS.src), 'node_modules'],
+    plugins: [new TsconfigPathsPlugin({ configFile: PATHS.tsconfig })],
   },
+
+  // Salida
   output: {
-    path: path.join(__dirname, '../app/dist/renderer'),
+    path: PATHS.dist,
     filename: '[name].js',
   },
+
+  // Servidor de desarrollo
   devServer: {
     port,
     compress: true,
     hot: true,
-    static: {
-      publicPath: '/',
-    },
+    static: { publicPath: '/' },
     headers: { 'Access-Control-Allow-Origin': '*' },
-    historyApiFallback: {
-      verbose: true,
-    },
-    client: {
-      logging: 'error',
-    },
+    historyApiFallback: { verbose: true },
+    client: { logging: 'error' },
     setupMiddlewares(middlewares) {
-      // eslint-disable-next-line no-console
-      console.log(`${chalk.whiteBright.bold('✨ Start')} ${chalk.green.bold('Hacking...👨‍💻')}`); // Electron is running...
-      let args = ['run', 'start:main'];
+      const args = ['run', 'start:main'];
       if (process.env.MAIN_ARGS) {
-        args = args.concat(['--', ...process.env.MAIN_ARGS.matchAll(/"[^"]+"|[^\s"]+/g)].flat());
+        args.push(...(process.env.MAIN_ARGS.match(/"[^"]+"|[^\s"]+/g) || []));
       }
+
       spawn('npm', args, {
         shell: true,
         stdio: 'inherit',
-      })
-        .on('close', (code: number) => {
-          process.exit(code);
-        })
-        // eslint-disable-next-line no-console
-        .on('error', (spawnError) => console.error(spawnError));
+      }).on('close', (code) => process.exit(code));
+
       return middlewares;
     },
   },

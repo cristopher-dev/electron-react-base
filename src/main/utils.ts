@@ -1,47 +1,45 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import { app } from 'electron';
-import installExtension, {
-  REACT_DEVELOPER_TOOLS,
-  REDUX_DEVTOOLS,
-} from 'electron-devtools-installer';
 import path from 'path';
 import { port } from '../../DevConfig.json';
 
-const isDebug = process.env.ELECTRON_ENV === 'debug';
+// Tipos y constantes básicas
+type Environment = 'production' | 'development';
+const ENV: Environment = process.env.NODE_ENV as Environment;
+const IS_DEBUG = process.env.ELECTRON_ENV === 'debug';
 
-function getAssetsPath(fileName: string) {
-  if (process.env.NODE_ENV === 'production' && app.isPackaged === true) {
-    return path.resolve(process.resourcesPath, 'assets', fileName);
+// Función para obtener IS_PACKAGED
+const getIsPackaged = (): boolean => {
+  return app.isPackaged;
+};
+
+// Obtener ruta base de la aplicación
+const getBasePath = (): string => {
+  if (ENV === 'production') {
+    return getIsPackaged() ? process.resourcesPath : path.resolve(__dirname, '../../..');
   }
-  if (process.env.NODE_ENV === 'production' && app.isPackaged === false) {
-    return path.resolve(__dirname, '../../../assets', fileName);
-  }
-  return path.resolve(__dirname, '../../assets', fileName);
-}
+  return path.resolve(__dirname, '../..');
+};
 
-function getHtmlPath(htmlFileName: string) {
-  if (process.env.NODE_ENV === 'development') {
-    const url = `http://localhost:${port}`;
-    return url;
-  }
-  return `file://${path.resolve(__dirname, `../renderer/${htmlFileName}`)}`;
-}
+// Obtener ruta de assets
+const getAssetsPath = (fileName: string): string => {
+  return path.join(getBasePath(), 'assets', fileName);
+};
 
-function getPreloadPath(Name: string) {
-  if (process.env.NODE_ENV === 'development') {
-    return path.resolve(__dirname, '../../app/dist/main', Name);
-  }
-  return path.resolve(__dirname, Name);
-}
+// Obtener ruta HTML
+const getHtmlPath = (htmlFileName: string): string => {
+  return ENV === 'development'
+    ? `http://localhost:${port}`
+    : `file://${path.resolve(__dirname, '../renderer', htmlFileName)}`;
+};
 
-function installExtensions() {
-  const extensions = [REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS];
-  extensions.forEach((Name) => {
-    // Comentamos la instalación de las extensiones
-    // installExtension(Name)
-    //   .then((name) => console.log(`${name} Extension Added`))
-    //   .catch((err) => console.log('An error occurred: ', err));
-  });
-}
+// Obtener ruta de preload
+const getPreloadPath = (fileName: string): string => {
+  const preloadBase =
+    ENV === 'development' ? path.resolve(__dirname, '../../app/dist/main') : __dirname;
+  return path.resolve(preloadBase, fileName);
+};
 
-export { isDebug, getAssetsPath, getHtmlPath, getPreloadPath, installExtensions };
+// Extensiones de desarrollo
+const installExtensions = (): void => {};
+
+export { IS_DEBUG as isDebug, getAssetsPath, getHtmlPath, getPreloadPath, installExtensions };

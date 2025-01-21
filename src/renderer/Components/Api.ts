@@ -1,13 +1,22 @@
-/* API LISTENERS */
-window.ipc.send('message', 'ping 🏓');
-window.ipc.receive('reply', (args) => {
-  // eslint-disable-next-line no-console
-  console.log(args);
-});
+// IPC Message handlers
+const initializeIpcListeners = () => {
+  // Send ping message
+  window.ipc.send('message', 'ping 🏓');
 
-/* LOCAL STORAGE LISTENERS */
-window.ipc.set('unicorn', 'Hello World! 🦄');
-// eslint-disable-next-line no-console
-console.log(window.ipc.get('unicorn'));
+  // Listen for reply
+  window.ipc.receive('reply', () => {});
+};
+
+// Local Storage handlers
+const initializeStorageHandlers = () => {
+  // Set demo value
+  window.ipc.set('unicorn', 'Hello World! 🦄');
+
+  // Get and log stored value
+};
+
+// Initialize all listeners
+initializeIpcListeners();
+initializeStorageHandlers();
 
 export {};

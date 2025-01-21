@@ -1,49 +1,53 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { app, Menu, shell } from 'electron';
+import { app, Menu, shell, MenuItemConstructorOptions } from 'electron';
 
-const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
-  /* FILE MENU */
+// URLs constantes
+const URLS = {
+  GITHUB_PROFILE: 'https://github.com/AjayKanniyappan',
+  REPO_URL: 'https://github.com/AjayKanniyappan/react-electron-template',
+  DOCS_URL: 'https://github.com/AjayKanniyappan/react-electron-template#readme',
+} as const;
+
+// Funciones auxiliares
+const openExternal = (url: string) => () => shell.openExternal(url);
+
+// Definición de menús
+const menuTemplate: MenuItemConstructorOptions[] = [
   {
-    label: 'File',
+    label: 'Archivo',
     submenu: [
       {
-        label: 'Exit',
-        click: () => {
-          app.exit();
-        },
+        label: 'Salir',
+        accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4',
+        click: () => app.quit(),
       },
     ],
-  } /* ABOUT MENU */,
+  },
   {
-    label: 'About',
+    label: 'Acerca de',
     submenu: [
       {
-        label: 'More',
-        click: () => {
-          shell.openExternal('https://github.com/AjayKanniyappan');
-        },
+        label: 'Más',
+        click: openExternal(URLS.GITHUB_PROFILE),
       },
     ],
-  } /* HELP MENU */,
+  },
   {
-    label: 'Help',
+    label: 'Ayuda',
     submenu: [
       {
-        label: 'Learn More',
-        click: () => {
-          shell.openExternal('https://github.com/AjayKanniyappan/react-electron-template');
-        },
+        label: 'Aprende Más',
+        click: openExternal(URLS.REPO_URL),
       },
       {
-        label: 'Documentation',
-        click: () => {
-          shell.openExternal('https://github.com/AjayKanniyappan/react-electron-template#readme');
-        },
+        label: 'Documentación',
+        accelerator: 'F1',
+        click: openExternal(URLS.DOCS_URL),
       },
     ],
   },
 ];
 
-const menu = Menu.buildFromTemplate(template);
-
-export default menu;
+// Exportar una función que crea el menú
+export function createMenu(): Menu {
+  return Menu.buildFromTemplate(menuTemplate);
+}
